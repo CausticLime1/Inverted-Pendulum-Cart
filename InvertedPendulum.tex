@@ -1,0 +1,277 @@
+\documentclass{article}
+\usepackage{geometry}[portrait, margin=0in]
+\usepackage{amsmath}
+\usepackage{fancyvrb}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdfpagemode=FullScreen,
+}
+\urlstyle{same}
+\title{Inverted Pendulum Cart Project}
+\author{Ryan Su}
+\begin{document}
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+\section{Introduction}
+The purpose of this project is to learn the fundamentals of control theory and 
+the analysis of dynamical systems. This project will act as a benchmark in my 
+journey in control theory and computational mechanics. Although, at the time in which 
+this project is being started, I am still in second year of Mechatronics Engineering 
+at McMaster University, so a full academic background in this field has not yet been
+achieved. This project owes many thanks to that of Eigensteve, or Steve Brunton, as his YouTube lecture 
+style videos taught me the fundamentals of control theory and its implementation in MatLab. 
+\section{Problem Statement}
+The problem that will be tackled in this project is the inverted pendulum cart. Where
+a free spinning pendulum will be kept in at a unstable fixed point, when a control input 
+is applied to the system; in this case, a cart. The cart will be attached to a rail
+via a gantry in which can slide freely and be moved with a stepper motor and a timing 
+belt. 
+\section{Analysis of Dynamical System}
+The intial state of this dynamical system can be expressed as 
+\begin{align*}
+    x = \begin{bmatrix}
+        x\\
+        \dot{x}\\
+        \theta\\
+        \dot{\theta}
+    \end{bmatrix}
+\end{align*}
+Where $x$ is the position of the cart, $\dot{x}$ is the velocity of the cart, $\theta$ is the angle
+the pendulum is at, and $\dot{\theta}$ is the angular velocity at which the pendulum is swinging.
+The time derivative of this vector is
+\begin{align*}
+    \frac{d}{dt}x = \dot{x} = \begin{bmatrix}
+        \dot{x}\\
+        \ddot{x}\\
+        \dot{\theta}\\
+        \ddot{\theta}
+    \end{bmatrix}
+\end{align*}
+To satisfy the general dynamical systems equation
+\[\dot{x}=Ax+Bu\]
+The system states must be derived, and the jacobian, or the partial derivative of each equation with 
+respect to the intial state variables, of the $\dot{x}$ vector, when substituted with a fixed point will yield A, the dynamics of
+the system, relating the intial state vector, $x$, to $\dot{x}$ over a period of time. The eigenvalues of 
+this A matrix will signify whether the system is stable at the fixed point, when $t$ goes to infinity. From this,
+we can then create $B$ the control matrix,  and inputs, $u$, to stabilize the system. 
+\subsection{Deriving Equations of Motion}
+\subsubsection{Newton's Laws}
+To find the equations of motion of this system, we can express the x and y components 
+of force on the cart with the following equations:
+\[F-R_x-b\dot{x}=M\ddot{x} \tag{1}\]
+In equation 1, $F$ represents the force applied on the system, $R_x$ is the reaction
+force in the x direction of the pin joint, $b\dot{x}$ is the linear dampening on the system caused by friction,
+and $M\ddot{x}$ is the acceleration of the cart.
+\[F_n-R_y-Mg=0 \tag{2}\]
+In equation 2, $F_n$ is the normal force on the cart provided by the rail, $R_y$
+is the reaction force in the y direction of the pin joint, and $Mg$ is the weight 
+of the cart.
+\\
+We can express the position vector of the pendulum as
+\[\vec{r_P}=(x-l\sin(\theta))\hat{x}+l\cos(\theta)\hat{y}\]
+Taking the time derivative of this we get the velocity of the pendulum
+\[\frac{d}{dt}\vec{r_P}=\frac{d}{dt}(x-l\sin(\theta))\hat{x}+l\cos(\theta)\hat{y}\]
+\[\vec{v_P}=(\dot{x}-l\cos(\theta)\dot{\theta})\hat{x}-l\sin(\theta)\dot{\theta}\hat{y}\]
+Taking the time derivative again to get the acceleration of the pendulum
+\[\frac{d}{dt}\vec{v_P}=\frac{d}{dt}(\dot{x}-l\cos(\theta)\dot{\theta})\hat{x}+l\sin(\theta)\dot{\theta}\hat{y}\]
+\[\vec{a_P}=(\ddot{x}+l\sin(\theta)\dot{\theta}^2-l\cos(\theta)\ddot{\theta})\hat{x}+(-l\cos(\theta)\dot{\theta}^2-l\sin(\theta)\ddot{\theta})\hat{y} \tag{3}\]
+With the acceleration of the pendulum and its components, the reaction force in the 
+x-direction can be calculated by multiplying the mass of the pendulum, denoted
+$m$, with the respective component of acceleration.
+\[R_x=m(\ddot{x}+l\sin(\theta)\dot{\theta}^2-l\cos(\theta)\ddot{\theta}) \tag{4}\]
+Substituting equation 4, the x-component of reaction force back into equation 1, x-component of the 
+net force we get
+\[F-m(\ddot{x}+l\sin(\theta)\dot{\theta}^2-l\cos(\theta)\ddot{\theta})-b\dot{x}=M\ddot{x}\]
+Which can be simplified to 
+\[F-m\ddot{x}-m(l\sin(\theta)\dot{\theta}^2-l\cos(\theta)\ddot{\theta})-b\dot{x}=M\ddot{x}\]
+\[F-(M+m)\ddot{x}-ml\sin(\theta)\dot{\theta}^2-b\dot{x}+ml\cos(\theta)\ddot{\theta}=0 \tag{5}\]
+To find the equation of motion for the pendulum. The frame of reference can be changed such that the x-axis is along 
+the path of the pendulum, and the y-axis is the direction parallel to that of the pendulum arm. The coordinate transformation vector
+for the previously mentioned operation is
+\[\vec{x_P}=\cos(\theta)\hat{x}+\sin(\theta)\hat{y}\]
+The pendulums motion can be expressed as 
+\[\vec{F_{netP}}=m\vec{a_P}-c\vec{v_P}\]
+Breaking up the operation by sides of the equation to reduce the length of equations, the dot product of this transformation vector 
+on the equation for the sum of forces on the pendulum
+\[\vec{x_P}\cdot\vec{F_{netP}}=\vec{x_P}\cdot(R_x\hat{x}+R_y\hat{y}-mg\hat{y})\]
+\[\vec{x_P}\cdot\vec{F_{netP}}=\vec{x_P}\cdot(\vec{R_P}\hat{y_P}-mg\hat{y})\]
+\[\vec{x_P}\cdot\vec{F_{netP}}=-mg\sin(\theta)\]
+The sum of reaction forces can be expressed as $R_P$ in the direction colinear to that 
+of the pendulum arm as it can be assumed that force can only be transfered through the arm 
+in this direction. Taking the dot product of $\vec{x_P}$ and $\vec{y_P}$ will result in 0, as 
+these two vectors are perpindicular. This results in the transformation of the y-component of gravity
+to be transformed. Doing the transform on the acceleration and velocity of the pendulum in equation 3, we get
+\[\vec{x_P}(\cdot m \vec{a_P}-c\vec{v_P})\]
+Splitting this operation into its acceleration and velocity components, for acceleration we get:
+\[\vec{x_P}\cdot m \vec{a_P}=\vec{x_P}\cdot m((\ddot{x}+l\sin(\theta)\dot{\theta}^2-l\cos(\theta)\ddot{\theta})\hat{x}-(l\cos(\theta)\dot{\theta}^2+l\sin(\theta)\ddot{\theta})\hat{y})\]
+\[\vec{x_P}\cdot m \vec{a_P}=m((\ddot{x}+l\sin(\theta)\dot{\theta}^2-l\cos(\theta)\ddot{\theta})\cos(\theta)-(l\cos(\theta)\dot{\theta}^2+l\sin(\theta)\ddot{\theta})\sin(\theta))\]
+Simplifying this monstrosity we get
+\[\vec{x_P}\cdot m \vec{a_P}=m(\ddot{x}\cos(\theta)+l\sin(\theta)\cos(\theta)\dot{\theta}^2-l\cos(\theta)^2\ddot{\theta}-l\cos(\theta)\sin(\theta)\dot{\theta}^2-l\sin(\theta)^2\ddot{\theta})\]
+Combining the like terms 
+\[\vec{x_P}\cdot m \vec{a_P}=m(\ddot{x}\cos(\theta)-(l(\cos(\theta)^2+\sin(\theta)^2)\ddot{\theta}))\]
+\[\vec{x_P}\cdot m \vec{a_P}=m(\ddot{x}\cos(\theta)-l\ddot{\theta})\]
+For velocity we get:
+\[\vec{x_P}\cdot (-c\vec{v_P})=\vec{x_P}\cdot -c((\dot{x}-l\cos(\theta)\dot{\theta})\hat{x}-l\sin(\theta)\dot{\theta}\hat{y})\]
+\[\vec{x_P}\cdot (-c\vec{v_P})=-c((\dot{x}-l\cos(\theta)\dot{\theta})\cos{(\theta)}-l\sin(\theta)\dot{\theta}\sin{(\theta)})\]
+Simplifying this equation:
+\[\vec{x_P}\cdot (-c\vec{v_P})=-c((\dot{x}\cos{(\theta)}-l\cos{(\theta)}^2\dot{\theta})-l\sin{(\theta)}^2\dot{\theta})\]
+\[\vec{x_P}\cdot (-c\vec{v_P})=-c(\dot{x}\cos{(\theta)}-l\dot{\theta}(\cos{(\theta)}^2+\sin{(\theta)}^2))\]
+\[\vec{x_P}\cdot (-c\vec{v_P})=-c\dot{x}\cos{(\theta)}+cl\dot{\theta}\]
+Combining the equations for the pendulum as newtons second law,
+\[\vec{x_P}\cdot\vec{F_{netP}}=\vec{x_P}\cdot (m\vec{a_P}-c\dot{x})\]
+\[-mg\sin(\theta)=m(\ddot{x}\cos(\theta)-l\ddot{\theta})-c\dot{x}\cos{(\theta)}+cl\dot{\theta}\]
+\[-g\sin(\theta)=\ddot{x}\cos(\theta)-l\ddot{\theta}-\frac{c}{m}\dot{x}\cos{(\theta)}+\frac{cl}{m}\dot{\theta}\]
+Solving for $\ddot{x}$ and $\ddot{\theta}$ such that they are independent of one another, $\ddot{x}$ can
+be isolated and then substituted into the pendulum equation. Isolating for $\ddot{x}$:
+\[F-(M+m)\ddot{x}-ml\sin(\theta)\dot{\theta}^2-b\dot{x}+ml\cos(\theta)\ddot{\theta}=0 \]
+\[\ddot{x}=\frac{F-ml\sin(\theta)\dot{\theta}^2-b\dot{x}+ml\cos(\theta)\ddot{\theta}}{M+m}\]
+Using a CAS, Maple, the double time derivatives $\ddot{x}$ and $\ddot{\theta}$ can be solved for:
+\[\ddot{x}=\frac{-ml\sin{(\theta)}+cl\cos{(\theta)}\dot{theta}-\cos{(\theta)}^2c\dot{x}+\cos{(\theta)}\sin{(\theta)}gm-b\dot{x}+F}{\sin{(\theta)}^2m+M}\]
+\[\ddot{\theta}=\frac{(-\dot{\theta}\sin{(\theta)}Lm^2+(-b\dot{x}-c\dot{x}+F)m-c\dot{x}M)\cos{(\theta)}+(M+m)(\dot{(\theta)}Lc+gm\sin{(\theta)})}{mL(\sin{(\theta)}^2m+M)}\]
+\subsubsection{Lagrangian's}
+The lagrangian for this system can first be defined by the kinetic energy in the system. This can be expressed as the sum of kinetic energies from the cart and the 
+pendulum. As the cart does is restricted from rotation, its kinetic energy is simply:
+\[T_{cart}=\frac{1}{2}Mv^2\]
+The pendulum has both linear and rotational motion and, thus, its kinetic energy can be expressed as:
+\[T_{pend}=\frac{1}{2}mv^2+\frac{1}{2}I\omega^2\]
+\subsection{System State Vector Derivations}
+To reiterate, the equations of motion for the cart and pendulum are shown below
+\[\ddot{x}=\frac{-ml\sin{(\theta)}+cl\cos{(\theta)}\dot{theta}-\cos{(\theta)}^2c\dot{x}+\cos{(\theta)}\sin{(\theta)}gm-b\dot{x}+F}{\sin{(\theta)}^2m+M}\]
+\[\ddot{\theta}=\frac{(-\dot{\theta}\sin{(\theta)}Lm^2+(-b\dot{x}-c\dot{x}+F)m-c\dot{x}M)\cos{(\theta)}+(M+m)(\dot{(\theta)}Lc+gm\sin{(\theta)})}{mL(\sin{(\theta)}^2m+M)}\]
+Thus, we can write the $\dot{x}$ vector as 
+\begin{align*}
+    \dot{x} = \begin{bmatrix}
+        \dot{x}\\
+        \frac{-ml\sin{(\theta)}+cl\cos{(\theta)}\dot{theta}-\cos{(\theta)}^2c\dot{x}+\cos{(\theta)}\sin{(\theta)}gm-b\dot{x}+F}{\sin{(\theta)}^2m+M}\\
+        \dot{\theta}\\
+        \frac{(-\dot{\theta}\sin{(\theta)}Lm^2+(-b\dot{x}-c\dot{x}+F)m-c\dot{x}M)\cos{(\theta)}+(M+m)(\dot{(\theta)}Lc+gm\sin{(\theta)})}{mL(\sin{(\theta)}^2m+M)}\\
+    \end{bmatrix}
+\end{align*}
+The jacboian of this vector can be taken to find matrix $A$, the system that relates the intial state of the system
+to the time derivative of the states in the system. This can be expressed as: 
+\begin{align*}
+    \dot{x} = \begin{bmatrix}
+        \frac{\partial f_1}{\partial x}\\
+        \frac{\partial f_2}{\partial x}\\
+        \frac{\partial f_3}{\partial x}\\
+        \frac{\partial f_4}{\partial x}
+    \end{bmatrix}
+\end{align*}
+Where $f_i$ is the function defined in $\dot{x}$ and $x$ is the respective variables defined in $x$. Doing
+this partial derivatives row by row, for row 1 defining $\dot{x}$:
+\begin{align*}
+    \dot{x} = \begin{bmatrix}
+        0 & 1 & 0 & 0\\
+    \end{bmatrix}
+\end{align*}
+As the derivative for this row will be extremely complicated to compute by hand, I used Maple to calculate the partial derivative
+for row 2 defining $\ddot{x}$. As the equations are large, the transpose of the row vector will be expressed here:
+\begin{small}
+    \begin{align*}
+        \ddot{x}^T = \begin{bmatrix}
+            0 \\ 
+            \frac{-\cos{(\theta)}^2c-b}{\sin{(\theta)}^2m+M} \\ 
+            \frac{-\sin{(\theta)}^2gm-c(l\dot{\theta}-2\dot{x}\cos{(\theta)})\sin{(\theta)}-m\cos{(\theta)}(\dot{\theta}^2l-g\cos{(\theta)})}{\sin{(\theta)}^2m+M}-\frac{2(-ml\sin{(\theta)}\dot{\theta}^2+l\cos{(\theta)}c\dot{\theta}-\cos{(\theta)}^2c\dot{x}+\cos{(\theta)}\sin{(\theta)}gm-b\dot{x}+F)\sin{(\theta)}\cos{(\theta)}m}{(\sin{(\theta)}^2m+M)^2}\\ 
+            \frac{l(-2m\sin{(\theta)}\dot{\theta}+\cos{(\theta)}c)}{\sin{(\theta)}^2m+M}\\
+        \end{bmatrix} 
+    \end{align*}
+\end{small}
+For row 3 defining $\dot{\theta}$:
+\begin{align*}
+    \dot{\theta} = \begin{bmatrix}
+        0 & 0 & 1 & 0\\
+    \end{bmatrix}
+\end{align*}
+Finally for row 4, again using Maple, defining $\ddot{\theta}$:
+\\
+As the equation is too long for the vector, the partial derivative of $\theta$ will be written as 
+\footnotesize
+\[\frac{\partial \ddot{\theta}}{\partial \theta}=\frac{1}{l}\frac{-m^2l\dot{theta}^2\cos{(\theta)}^2-(-\dot{\theta}^2\sin{(\theta)m^2l+(-b\dot{x}-c\dot{x}+F)m-c\dot{x}M})\sin{(\theta)}+(M+m)g\cos{(\theta)}m}{m(\sin{(\theta)}^2m+M)}\]
+\[-\frac{2((-\dot{theta}^2\sin{(\theta)}m^2l+(-b\dot{x}-c\dot{x}+F)m-c\dot{x}M)\cos{(\theta)}+(M+m)(cl\dot{\theta}+g\sin{\theta}m))\sin{(\theta)}\cos{(\theta)}}{(\sin{(\theta)}^2m+M)^2}\]
+\normalsize
+\begin{align*}
+    \ddot{\theta}^T = \begin{bmatrix}
+        0 \\
+        -\frac{\cos{(\theta)}((b+c)m+Mc)}{ml(\sin{(\theta)}^2m+M)} \\
+        \frac{\partial \ddot{\theta}}{\partial \theta} \\
+        \frac{-2\dot{\theta}\sin{(\theta)}m^2\cos{(\theta)}+(M+m)c}{m(\sin{(\theta)^2m+M})}\\
+    \end{bmatrix}
+\end{align*}
+As we want our pendulum to be held in the unstable state of the straight up position, we can define this fixed
+state as 
+\begin{align*}
+    \bar{x} = \begin{bmatrix}
+        x \\
+        0 \\
+        0 \\
+        0
+    \end{bmatrix}
+\end{align*}
+This defines the stable state of the system as a cart that is unmoving in the x-direction, no angular velcocity, and 
+with $\theta$ being 0, thus in the upwards direction. The first row is just $x$ itself as the stability of the pendulum
+does not depend on the position of the cart. Multiplying this matrix by the  
+$\dot{x}$ jacobian we get
+\begin{align*}
+    A = \begin{bmatrix}
+        0 & 1 & 0 & 0 \\
+        0 & -\frac{b+c}{M} & \frac{mg}{M} & \frac{cl}{M}\\
+        0 & 0 & 0 & 1\\
+        0 & -\frac{(b+c)m+Mc}{lmM} & \frac{(M+m)g}{lM} & \frac{(M+m)c}{mM}
+    \end{bmatrix}
+\end{align*}
+
+\section{Controls}
+The effect of force on the system, which is controlled by the control input $u$, can be determined by taking the coefficients
+of the force term in the equations for $\ddot{x}$ and $\ddot{\theta}$. Using the coeff() function in Maple, we get the following 
+coefficients in the control matrix B:
+\begin{align*}
+    B = \begin{bmatrix}
+        0 \\
+        \frac{1}{M} \\
+        0 \\
+        \frac{1}{lM}
+    \end{bmatrix}
+\end{align*}
+This allows an input $u$ to control the velocity of the cart and its relationship of the angular velocity of the 
+pendulum. Verifying this in MatLab with the ctrb() function, the matrix $C$ defined as 
+\begin{align*}
+    C = \begin{bmatrix}
+        B & AB & A^2B & A^3B & \dots & A^{n-1}B
+    \end{bmatrix}
+\end{align*}
+$A$ and $B$ has a rank of 4, which is the dimension of the system, and is, thus, controllable. This is due to the fact
+all row space are dependent on a input. Developing the control law for this system can be done with the help of
+the below formula and MatLab
+\[u = -Kx\]
+This is defined as an input $u$ into the system by when multiplied by $B$, will be equal to a constant $K$
+multiplied by the state of the system by measurements read from the system $x$. The coefficient K can be 
+found by using the linear quadratic regulator function in MatLab, defined as lqr(). The linear quadratic regulator
+optimizes the function:
+\[J=\int_0^{\infty}{x^TQx+u^TRu}\]
+Where $J$ is the cost function of the system. $Q$ is by a matrix as the cost function of the dynamics of the system, 
+or how important each variable is to the stability of the system. $R$ is scalar defined by the cost function of the 
+input to the system, or how expensive it is to complete the inputs on the system. As I have not learned to 
+calculate these cost functions yet, approximate numbers will be used (This is in courtesy of Eigensteve, or Steve Brunton)
+\begin{align*}
+    Q = \begin{bmatrix}
+        1 & 0 & 0 & 0 \\
+        0 & 1 & 0 & 0 \\
+        0 & 0 & 10 & 0 \\
+        0 & 0 & 0 & 100
+    \end{bmatrix}
+\end{align*}
+This matrix tells us that, in the first and second row, $x$ and $\dot{x}$, or the position and velocity of the cart 
+doesnt matter. However, $\theta$ and $\dot{\theta}$ is more impactful and should be prioritized when controlling the system.
+$R$ will be set to 0.001 as the energy used to move the cart is not an issue. Perhaps for a future project where a fuel source
+is used or energy needs to be conserved, a larger $R$ value will be used. Using the lqr() function with inputs,
+\[K=lqr(A, B, Q, R)\]
+This gives a $K$ matrix that will place the eigenvalues of the system $(A-BK)x$ into an optimal place that
+will be efficient at stabilizing the cart. 
+
+\end{document}
